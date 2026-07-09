@@ -35,14 +35,18 @@ if 'google.colab' in sys.modules:
             os.chdir(DRIVE_BASE_PATH)
             ipython.system(f"git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git")
         else:
-            print(f"检测到 Google Drive 中已存在仓库，直接使用: {REPO_PATH}")
+            print(f"检测到 Google Drive 中已存在仓库，直接使用并拉取 GitHub 最新代码...")
+            os.chdir(REPO_PATH)
+            ipython.system("git pull")
     else:
         REPO_PATH = COLAB_LOCAL_PATH
         if not os.path.exists(REPO_PATH):
             print("正在自动将 GitHub 仓库克隆到 Colab 临时虚拟机环境中...")
             ipython.system(f"git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git {REPO_PATH}")
         else:
-            print(f"Colab 临时虚拟机环境中已存在仓库: {REPO_PATH}")
+            print(f"Colab 临时虚拟机环境中已存在仓库，正在自动拉取 GitHub 最新代码...")
+            os.chdir(REPO_PATH)
+            ipython.system("git pull")
             
     # 4. 切换工作路径到当前 Notebook 所在的子项目目录
     if subdir:
