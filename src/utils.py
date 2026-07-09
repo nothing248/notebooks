@@ -18,7 +18,7 @@ def get_data_path(filename=""):
     
     # 递归向上寻找项目根目录的标志文件/文件夹，最多向上查找 5 级
     for _ in range(5):
-        if os.path.exists(os.path.join(root_dir, '.git')) or os.path.exists(os.path.join(root_dir, 'requirements.txt')):
+        if os.path.exists(os.path.join(root_dir, '.git')):
             break
         parent_dir = os.path.dirname(root_dir)
         if parent_dir == root_dir:
