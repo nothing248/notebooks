@@ -57,7 +57,7 @@ nbstripout --install
 
 ## 📦 最佳实践 2：依赖管理 (全局 vs 局部)
 
-每个 Notebook 的研究主题各不相同（如 NLP、图像处理、金融分析），为了防止库版本冲突和环境臃肿，我们采用**分层维护模式**：
+每个 Notebook 的研究主题各不相同（如 NLP、图像处理、金融分析），为了防止库版本冲突 and 环境臃肿，我们采用**分层维护模式**：
 
 1. **全局依赖 (`./requirements.txt`)**：仅包含开发工具（如 `nbstripout`）。
 2. **局部依赖 (`./notebooks/<your_project>/requirements.txt`)**：存放该具体研究项目专用的库。
@@ -132,7 +132,7 @@ df = pd.read_csv(data_file)
 2. **在 Notebook 中添加快捷打开徽章**：
    在 Notebook 顶部添加如下 Markdown：
    ```markdown
-   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<用户名>/<仓库名>/blob/main/notebooks/<项目文件夹>/<文件名>.ipynb)
+   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nothing248/notebooks/blob/main/notebooks/project_analysis_demo/analysis.ipynb)
    ```
 3. **保存**：修改完成后，点击 **File -> Save a copy in GitHub**，即可将修改直接提交回 GitHub 仓库（带输出）。
 
@@ -141,12 +141,12 @@ df = pd.read_csv(data_file)
    ```bash
    # 在 Colab 挂载 Drive 后运行
    %cd /content/drive/MyDrive
-   !git clone https://github.com/<用户名>/<仓库名>.git
+   !git clone https://github.com/nothing248/notebooks.git
    ```
 2. 在 Colab Notebook 中开发。所有修改会自动实时保存到您的 Google Drive。
 3. 当需要将修改推送到 GitHub 时，直接在 Notebook 中运行以下命令：
    ```python
-   !git config --global user.name "Your Name"
+   !git config --global user.name "nothing248"
    !git config --global user.email "your.email@example.com"
    !git add .
    !git commit -m "update: training results"
