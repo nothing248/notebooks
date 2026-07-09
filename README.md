@@ -1,6 +1,8 @@
-# Jupyter Notebook 最佳实践项目模板（Colab + uv 优化版）
+# Jupyter Notebook 最佳实践项目模板（Colab + uv 极简版）
 
-这是一个专为 **Jupyter Notebook 管理** 打造 of Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化，并推荐使用现代化包管理工具 **uv**。
+这是一个专为 **Jupyter Notebook 群管理** 打造的 Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化，并推荐使用现代化包管理工具 **uv**。
+
+本项目通过将繁琐的 Colab 挂载、克隆、路径定位与依赖安装逻辑封装至根目录下的统一脚本，实现了**在任一 Notebook 中只需两行代码即可瞬间完成双端初始化**的极致体验（完美遵循 DRY 原则）。
 
 ---
 
@@ -11,6 +13,7 @@
 ├── .gitattributes               # 配置 Jupyter 提交过滤器 (自动清理输出)
 ├── .gitignore                   # 过滤 Python 临时文件与大型数据文件
 ├── README.md                    # 本说明文档
+├── colab_init.py                # 【核心组件】统一的 Colab 初始化托管脚本 (支持自动克隆、Drive 持久化)
 ├── requirements.txt             # 【全局依赖】仅存放通用开发工具 (如 nbstripout)
 ├── data/                        # 【小额数据】存放配置文件、小测试数据 (< 10MB)
 │   └── .gitkeep
@@ -19,7 +22,7 @@
 └── notebooks/                   # 【笔记本库】
     ├── .gitkeep
     └── project_analysis_demo/   # 【子项目示例】
-        ├── analysis.ipynb       # 演示 Notebook
+        ├── analysis.ipynb       # 演示 Notebook (已应用极简初始化)
         └── requirements.txt     # 【局部依赖】该子项目特有的第三方库 (如 pandas, matplotlib)
 ```
 
@@ -50,71 +53,28 @@ uv pip install -r requirements.txt
 nbstripout --install
 ```
 
-> [!NOTE]
-> 该配置只在您提交时临时过滤，**不会**影响您本地编辑时看到的输出。另外，从 Google Colab 界面直接“保存副本到 GitHub”时不受本地 filter 限制，依然能完整保留输出。
-
 ---
 
-## 📦 最佳实践 2：依赖管理 (全局 vs 局部)
+## 📦 最佳实践 2：极致简化的 Colab 一键初始化 (DRY 原则)
 
-每个 Notebook 的研究主题各不相同（如 NLP、图像处理、金融分析），为了防止库版本冲突和环境臃肿，我们采用**分层维护模式**：
+我们无需在每一个 Notebook 头部粘贴几十行复杂的挂载、克隆、路径查找和 `pip` 安装代码。我们在根目录下提供了 `colab_init.py`。
 
-1. **全局依赖 (`./requirements.txt`)**：仅包含开发工具（如 `nbstripout`）。
-2. **局部依赖 (`./notebooks/<your_project>/requirements.txt`)**：存放该具体研究项目专用的库。
-
-### 💻 在 Colab 中动态安装子项目依赖 (一劳永逸同步)
-当您在 Colab 中打开某个子项目笔记本时，在 Notebook 首个单元格内运行以下代码，它会自动检测当前环境并配置完整环境（如未同步到 Drive，将**自动克隆至 Drive 中永久存储**，无需每次重复拉取，且修改实时云端保存）：
+您在任意一个新建的 Notebook 的首个单元格内，**只需编写如下两行代码**：
 
 ```python
-import sys
-import os
+# 1. 声明当前 Notebook 所属的子项目目录名
+COLAB_SUBDIR = "project_analysis_demo"
 
-# 1. 智能检测是否在 Colab 运行
-if 'google.colab' in sys.modules:
-    GITHUB_USER = "nothing248"
-    REPO_NAME = "notebooks"
-    
-    COLAB_LOCAL_PATH = f"/content/{REPO_NAME}"
-    DRIVE_BASE_PATH = "/content/drive/MyDrive"
-    DRIVE_PATH = f"{DRIVE_BASE_PATH}/{REPO_NAME}"
-    
-    # 2. 尝试挂载 Google Drive
-    has_drive = False
-    try:
-        from google.colab import drive
-        drive.mount('/content/drive')
-        has_drive = os.path.exists(DRIVE_BASE_PATH)
-    except Exception as e:
-        print("提示: 未挂载 Google Drive，将使用 Colab 临时运行环境。")
-    
-    # 3. 决定克隆与运行路径
-    if has_drive:
-        REPO_PATH = DRIVE_PATH
-        # 如果 Google Drive 中不存在该仓库，则自动克隆到 Drive 中永久保留
-        if not os.path.exists(REPO_PATH):
-            print(f"Google Drive 中未检测到仓库。正在自动克隆到您的 Google Drive...")
-            os.chdir(DRIVE_BASE_PATH)
-            !git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git
-        else:
-            print(f"检测到 Google Drive 中已存在仓库，直接使用: {REPO_PATH}")
-    else:
-        # 如果未授权 Drive，则退回到 Colab 本地临时虚拟机路径克隆
-        REPO_PATH = COLAB_LOCAL_PATH
-        if not os.path.exists(REPO_PATH):
-            print("正在自动将 GitHub 仓库克隆到 Colab 临时运行环境...")
-            !git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git {REPO_PATH}
-        else:
-            print(f"Colab 临时运行环境中已存在仓库: {REPO_PATH}")
-            
-    # 4. 切换工作路径到当前 Notebook 所在的子项目目录
-    TARGET_SUBDIR = os.path.join(REPO_PATH, "notebooks", "project_analysis_demo")
-    os.chdir(TARGET_SUBDIR)
-    print(f"当前工作目录已成功切换至: {os.getcwd()}")
-    
-    # 5. 安装 uv 并极速安装子项目局部依赖到 Colab 全局系统
-    !pip install uv
-    !uv pip install --system -r requirements.txt
+# 2. 一键执行托管的初始化脚本
+import urllib.request
+exec(urllib.request.urlopen("https://raw.githubusercontent.com/nothing248/notebooks/main/colab_init.py").read().decode("utf-8"))
 ```
+
+### ⚙️ 托管脚本会在后台自动为您完成：
+1. **自动持久化**：挂载 Google Drive，并检测是否有此仓库。若无，则自动克隆到您的 Drive 下永久存储，避免每次重复克隆。
+2. **工作路径自适应**：自动定位并 `cd` 到您在 `COLAB_SUBDIR` 声明的子项目文件夹下。
+3. **系统寻径自动配置**：自动把项目根目录（`src/` 所在路径）加入 `sys.path`。这意味着您在初始化完后，可以像本地开发一样直接 `from src.utils import xxx`。
+4. **依赖极速安装**：自动在 Colab 环境下安装 `uv`，并极速装载局部 `requirements.txt` 下的所有专属第三方库。
 
 ---
 
@@ -137,7 +97,7 @@ graph TD
 ```python
 # 确保项目根目录在 sys.path 中
 import sys, os
-# ... (具体寻径代码见示例 notebook) ...
+# ... (在步骤一初始化中已由 colab_init.py 自动完成系统寻径添加) ...
 
 from src.utils import get_data_path
 
