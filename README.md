@@ -1,6 +1,6 @@
 # Jupyter Notebook 最佳实践项目模板（Colab + uv 优化版）
 
-这是一个专为 **Jupyter Notebook 管理** 打造的 Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化，并推荐使用现代化包管理工具 **uv**。
+这是一个专为 **Jupyter Notebook 管理** 打造 of Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化，并推荐使用现代化包管理工具 **uv**。
 
 ---
 
@@ -57,13 +57,13 @@ nbstripout --install
 
 ## 📦 最佳实践 2：依赖管理 (全局 vs 局部)
 
-每个 Notebook 的研究主题各不相同（如 NLP、图像处理、金融分析），为了防止库版本冲突 and 环境臃肿，我们采用**分层维护模式**：
+每个 Notebook 的研究主题各不相同（如 NLP、图像处理、金融分析），为了防止库版本冲突和环境臃肿，我们采用**分层维护模式**：
 
 1. **全局依赖 (`./requirements.txt`)**：仅包含开发工具（如 `nbstripout`）。
 2. **局部依赖 (`./notebooks/<your_project>/requirements.txt`)**：存放该具体研究项目专用的库。
 
-### 💻 在 Colab 中动态安装子项目依赖 (利用 uv 极速安装)
-当您在 Colab 中打开某个子项目笔记本时，在 Notebook 首个单元格内运行以下代码，即可快速完成环境配置：
+### 💻 在 Colab 中动态安装子项目依赖 (一劳永逸同步)
+当您在 Colab 中打开某个子项目笔记本时，在 Notebook 首个单元格内运行以下代码，它会自动检测当前环境并配置完整环境（如未同步到 Drive，将**自动克隆至 Drive 中永久存储**，无需每次重复拉取，且修改实时云端保存）：
 
 ```python
 import sys
@@ -71,20 +71,48 @@ import os
 
 # 1. 智能检测是否在 Colab 运行
 if 'google.colab' in sys.modules:
-    # 2. 挂载 Google Drive
-    from google.colab import drive
-    drive.mount('/content/drive')
+    GITHUB_USER = "nothing248"
+    REPO_NAME = "notebooks"
     
-    # 3. 切换到您在 Drive 中克隆的仓库目录
-    REPO_NAME = "notebooks" 
-    REPO_PATH = f"/content/drive/MyDrive/{REPO_NAME}"
-    os.chdir(REPO_PATH)
+    COLAB_LOCAL_PATH = f"/content/{REPO_NAME}"
+    DRIVE_BASE_PATH = "/content/drive/MyDrive"
+    DRIVE_PATH = f"{DRIVE_BASE_PATH}/{REPO_NAME}"
     
-    # 4. 安装 uv (极速，只需 2 秒)
+    # 2. 尝试挂载 Google Drive
+    has_drive = False
+    try:
+        from google.colab import drive
+        drive.mount('/content/drive')
+        has_drive = os.path.exists(DRIVE_BASE_PATH)
+    except Exception as e:
+        print("提示: 未挂载 Google Drive，将使用 Colab 临时运行环境。")
+    
+    # 3. 决定克隆与运行路径
+    if has_drive:
+        REPO_PATH = DRIVE_PATH
+        # 如果 Google Drive 中不存在该仓库，则自动克隆到 Drive 中永久保留
+        if not os.path.exists(REPO_PATH):
+            print(f"Google Drive 中未检测到仓库。正在自动克隆到您的 Google Drive...")
+            os.chdir(DRIVE_BASE_PATH)
+            !git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git
+        else:
+            print(f"检测到 Google Drive 中已存在仓库，直接使用: {REPO_PATH}")
+    else:
+        # 如果未授权 Drive，则退回到 Colab 本地临时虚拟机路径克隆
+        REPO_PATH = COLAB_LOCAL_PATH
+        if not os.path.exists(REPO_PATH):
+            print("正在自动将 GitHub 仓库克隆到 Colab 临时运行环境...")
+            !git clone https://github.com/{GITHUB_USER}/{REPO_NAME}.git {REPO_PATH}
+        else:
+            print(f"Colab 临时运行环境中已存在仓库: {REPO_PATH}")
+            
+    # 4. 切换工作路径到当前 Notebook 所在的子项目目录
+    TARGET_SUBDIR = os.path.join(REPO_PATH, "notebooks", "project_analysis_demo")
+    os.chdir(TARGET_SUBDIR)
+    print(f"当前工作目录已成功切换至: {os.getcwd()}")
+    
+    # 5. 安装 uv 并极速安装子项目局部依赖到 Colab 全局系统
     !pip install uv
-    
-    # 5. 定位并使用 uv 极速安装子项目局部依赖到 Colab 全局系统
-    %cd {REPO_PATH}/notebooks/project_analysis_demo
     !uv pip install --system -r requirements.txt
 ```
 
