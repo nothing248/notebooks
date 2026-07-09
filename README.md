@@ -1,6 +1,6 @@
-# Jupyter Notebook 最佳实践项目模板（Colab 同步优化版）
+# Jupyter Notebook 最佳实践项目模板（Colab + uv 优化版）
 
-这是一个专为 **Jupyter Notebook 管理** 打造的 Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化与最佳实践配置。
+这是一个专为 **Jupyter Notebook 管理** 打造的 Git 仓库模板，特别针对 **Google Colab 同步与协作** 进行了架构优化，并推荐使用现代化包管理工具 **uv**。
 
 ---
 
@@ -27,27 +27,31 @@
 
 ## 🚀 最佳实践 1：版本控制优化 (清除 Notebook 输出)
 
-Jupyter Notebook (`.ipynb`) 文件本质上是 JSON 文件。如果直接将运行后的 Notebook 提交到 Git，会导致：
-1. **图片等二进制输出**被写入 Git 历史，使仓库体积迅速膨胀。
-2. 每次运行时**执行次数 (Execution Count)** 的变化导致无意义的 Git Diff 冲突。
+Jupyter Notebook (`.ipynb`) 文件本质上是 JSON 文件。如果直接将运行后的 Notebook 提交到 Git，会污染 Diff 历史。
 
-### 🛠️ 解决方案：`nbstripout`
-我们在 `.gitattributes` 中配置了 `filter=nbstripout`。您只需在**本地**执行以下命令一次，此后 `git commit` 时就会自动在后台清除 Notebook 中的输出和执行计数，保持 Git History 绝对干净：
+### 🛠️ 本地环境初始化 (使用 uv)
+我们在 `.gitattributes` 中配置了 `filter=nbstripout`。您只需在**本地**安装 `uv` 并执行以下命令一次，此后 `git commit` 时就会自动在后台清除 Notebook 中的输出和执行计数，保持 Git History 绝对干净：
 
 ```bash
-# 1. 创建并激活您的本地虚拟环境 (推荐)
-python3 -m venv .venv
+# 1. 安装 uv (如果本地还没有)
+# macOS: brew install uv
+# 其它平台: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. 在项目根目录下创建虚拟环境 (默认创建在 .venv)
+uv venv
+
+# 3. 激活虚拟环境 (macOS)
 source .venv/bin/activate
 
-# 2. 安装全局依赖
-pip install -r requirements.txt
+# 4. 极速安装全局开发依赖 (nbstripout)
+uv pip install -r requirements.txt
 
-# 3. 在当前 Git 仓库中激活过滤属性
+# 5. 在当前 Git 仓库中激活过滤属性
 nbstripout --install
 ```
 
 > [!NOTE]
-> 该配置只在您提交时临时过滤，**不会**影响您本地编辑时看到的输出。另外，从 Google Colab 界面直接“保存副本到 GitHub”时不受本地 filter 限制，依然能完整保留输出，提供了完美的平衡。
+> 该配置只在您提交时临时过滤，**不会**影响您本地编辑时看到的输出。另外，从 Google Colab 界面直接“保存副本到 GitHub”时不受本地 filter 限制，依然能完整保留输出。
 
 ---
 
@@ -58,7 +62,7 @@ nbstripout --install
 1. **全局依赖 (`./requirements.txt`)**：仅包含开发工具（如 `nbstripout`）。
 2. **局部依赖 (`./notebooks/<your_project>/requirements.txt`)**：存放该具体研究项目专用的库。
 
-### 💻 在 Colab 中动态安装子项目依赖
+### 💻 在 Colab 中动态安装子项目依赖 (利用 uv 极速安装)
 当您在 Colab 中打开某个子项目笔记本时，在 Notebook 首个单元格内运行以下代码，即可快速完成环境配置：
 
 ```python
@@ -76,9 +80,12 @@ if 'google.colab' in sys.modules:
     REPO_PATH = f"/content/drive/MyDrive/{REPO_NAME}"
     os.chdir(REPO_PATH)
     
-    # 4. 定位并安装子项目的局部依赖
+    # 4. 安装 uv (极速，只需 2 秒)
+    !pip install uv
+    
+    # 5. 定位并使用 uv 极速安装子项目局部依赖到 Colab 全局系统
     %cd {REPO_PATH}/notebooks/project_analysis_demo
-    !pip install -r requirements.txt
+    !uv pip install --system -r requirements.txt
 ```
 
 ---
@@ -145,4 +152,3 @@ df = pd.read_csv(data_file)
    !git commit -m "update: training results"
    !git push
    ```
-   *(提示：可配合 SSH 密钥或 GitHub Personal Access Token 进行免密 Push)*
