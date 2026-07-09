@@ -1,0 +1,3 @@
+# Global tools for Jupyter/Git workflow
+# Run `pip install -r requirements.txt && nbstripout --install` to enable clean git commits for Jupyter Notebooks
+nbstripout==0.8.1

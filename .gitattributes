@@ -1,0 +1,2 @@
+# Treat Jupyter Notebooks as JSON but strip outputs on diff/merge if nbstripout is installed
+*.ipynb filter=nbstripout

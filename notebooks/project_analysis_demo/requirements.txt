@@ -1,0 +1,4 @@
+# Specific dependencies for project_analysis_demo
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
